@@ -1,5 +1,9 @@
 # SecureVulnScanner
 
+![CI](https://github.com/SRINIVASAN55/SecureVulnScanner/actions/workflows/ci.yml/badge.svg) ![License: MIT](https://img.shields.io/badge/License-MIT-green.svg) ![Python](https://img.shields.io/badge/python-3.8+-blue.svg)
+
+
+
 A lightweight web application vulnerability scanner. Point it at a URL, get a prioritised list of security issues with CVE references and remediation steps.
 
 ---
