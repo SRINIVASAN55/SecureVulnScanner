@@ -4,88 +4,155 @@ A lightweight web application vulnerability scanner. Point it at a URL, get a pr
 
 ---
 
-## Scan coverage
+## Prerequisites
 
-**Injection**
-- SQL injection (error-based, blind, time-based) — `T1190`, `CWE-89`
-- XSS (reflected, stored, DOM) — `CWE-79`
-- Command injection via form fields and headers — `CWE-78`
-- Path traversal / LFI — `CWE-22`
-- XXE in XML endpoints — `CWE-611`
+| Requirement | Details |
+|-------------|---------|
+| Python | 3.8 or higher |
+| OS | Linux, macOS, Windows |
+| Internet | Required to reach the target URL |
+| Permission | **Only scan systems you own or have written permission to test** |
 
-**Authentication & Session**
+```bash
+python3 --version    # must be 3.8+
+```
+
+---
+
+## Installation
+
+```bash
+git clone https://github.com/SRINIVASAN55/SecureVulnScanner.git
+cd SecureVulnScanner
+pip install -r requirements.txt
+```
+
+---
+
+## Running It
+
+### Basic scan — one command
+```bash
+python3 scanner.py --url https://yourtarget.com
+python3 scanner.py -u http://testphp.vulnweb.com    # safe public test site
+```
+Crawls the site to depth 2 and checks for the most common vulnerabilities (SQLi, XSS, open headers, TLS issues, exposed files).
+
+### Control crawl depth
+```bash
+# Shallow — homepage only
+python3 scanner.py -u https://yourtarget.com --depth 1
+
+# Deep — follow links up to 3 levels
+python3 scanner.py -u https://yourtarget.com --depth 3
+python3 scanner.py -u https://yourtarget.com -d 3
+```
+
+### Set request timeout
+```bash
+# For slow servers — increase timeout
+python3 scanner.py -u https://yourtarget.com --timeout 30
+
+# For fast networks — tighten timeout
+python3 scanner.py -u https://yourtarget.com -t 5
+```
+
+### Combine all options
+```bash
+python3 scanner.py -u https://yourtarget.com -d 3 -t 15
+```
+
+---
+
+## All CLI Flags
+
+| Flag | Short | Description | Default | Example |
+|------|-------|-------------|---------|---------|
+| `--url` | `-u` | Target URL **(required)** | — | `-u https://example.com` |
+| `--depth` | `-d` | Crawl depth | `2` | `-d 3` |
+| `--timeout` | `-t` | Request timeout in seconds | `10` | `-t 20` |
+
+---
+
+## What It Checks
+
+**Injection flaws**
+- SQL injection — error-based, blind, time-based (`CWE-89`)
+- Cross-site scripting — reflected, stored, DOM (`CWE-79`)
+- Command injection via form fields and headers (`CWE-78`)
+- Path traversal / local file inclusion (`CWE-22`)
+- XXE in XML endpoints (`CWE-611`)
+
+**Authentication & session**
 - Default credentials against login pages
-- Weak session token entropy detection
+- Weak session token entropy
 - Missing HttpOnly / Secure cookie flags
-- Exposed admin panels (`/admin`, `/wp-admin`, `/.env`, etc.)
+- Exposed admin panels (`/admin`, `/wp-admin`, `/.env`)
 
-**Configuration**
+**Misconfiguration**
 - Open HTTP methods (TRACE, PUT, DELETE)
 - Missing security headers (CSP, HSTS, X-Frame-Options)
 - TLS version and cipher audit
 - Directory listing enabled
 - Exposed `.git`, `.svn`, backup files
 
-**CVE Matching**
-- Banner fingerprinting against NVD CVE database
-- Version-based vulnerability lookup (Apache, nginx, PHP, WordPress, etc.)
-
 ---
 
-## Usage
-
-```bash
-git clone https://github.com/SRINIVASAN55/SecureVulnScanner
-cd SecureVulnScanner
-pip install -r requirements.txt
-
-# Basic scan
-python scanner.py --url https://target.example.com
-
-# Full scan with all modules
-python scanner.py --url https://target.example.com --full
-
-# Scan with custom wordlist
-python scanner.py --url https://target.example.com --wordlist custom.txt
-
-# Output formats
-python scanner.py --url https://target.example.com --output report.html
-python scanner.py --url https://target.example.com --output report.json
-```
-
----
-
-## Sample report
+## Sample Output
 
 ```
-SCAN RESULTS — target.example.com
+SCAN RESULTS — example.com
 ──────────────────────────────────────────────────────────
 [CRITICAL]  SQL Injection in /search?q=  (CWE-89)
             Payload: ' OR 1=1--
-            Fix: Use parameterised queries
+            Fix: Use parameterised queries / prepared statements
 
 [HIGH]      Stored XSS in /comments     (CWE-79)
             Payload: <script>alert(1)</script>
-            Fix: Encode output, implement CSP
+            Fix: Encode output, implement Content-Security-Policy
 
 [HIGH]      Apache 2.4.49 detected      (CVE-2021-41773)
             Path traversal + RCE if mod_cgi enabled
-            Fix: Upgrade to 2.4.51+
+            Fix: Upgrade to Apache 2.4.51+
 
 [MEDIUM]    Missing HSTS header
-            Fix: Strict-Transport-Security: max-age=31536000
+            Fix: Add Strict-Transport-Security: max-age=31536000
 
 [LOW]       Directory listing on /uploads/
-            Fix: Disable in server config
+            Fix: Add Options -Indexes to server config
 ──────────────────────────────────────────────────────────
 5 findings  |  1 critical  |  2 high  |  1 medium  |  1 low
 ```
 
 ---
 
-## Legal
+## Safe Test Targets (legal to scan)
 
-Only scan systems you own or have written permission to test. Unauthorized scanning is illegal in most jurisdictions.
+```bash
+# These sites exist specifically for vulnerability scanner testing:
+python3 scanner.py -u http://testphp.vulnweb.com
+python3 scanner.py -u http://webscantest.com
+python3 scanner.py -u https://hackthissite.org   # with account
+```
+
+---
+
+## Troubleshooting
+
+**`SSLError` or `certificate verify failed`**
+→ Target has a bad cert. Add `--timeout 30` for slow handshakes or check if the site is actually up.
+
+**Scan returns 0 findings on a site you know is vulnerable**
+→ Increase depth: `-d 3`. Some vulnerabilities are on deeper pages.
+
+**Scanner is very slow**
+→ Reduce timeout: `-t 5`. Or the target server is just slow.
+
+---
+
+## Legal Notice
+
+Only scan systems you own or have explicit written permission to test. Unauthorized scanning violates computer fraud laws in most jurisdictions. The author is not responsible for misuse.
 
 ---
 
