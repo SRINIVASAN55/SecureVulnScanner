@@ -1,90 +1,92 @@
-```
- ██████╗ ███████╗ ██████╗██╗   ██╗██████╗ ███████╗
-██╔════╝ ██╔════╝██╔════╝██║   ██║██╔══██╗██╔════╝
-╚█████╗  █████╗  ██║     ██║   ██║██████╔╝█████╗  
- ╚═══██╗ ██╔══╝  ██║     ██║   ██║██╔══██╗██╔══╝  
-██████╔╝ ███████╗╚██████╗╚██████╔╝██║  ██║███████╗
-╚═════╝  ╚══════╝ ╚═════╝ ╚═════╝ ╚═╝  ╚═╝╚══════╝
-          V U L N   S C A N N E R
-```
+# SecureVulnScanner
 
-<p align="center">
-  <img src="https://img.shields.io/badge/⚠_AUTHORIZED_USE_ONLY-FF0000?style=for-the-badge&labelColor=1a0000"/>
-  <img src="https://img.shields.io/badge/OWASP-Top%2010%20Coverage-FF6600?style=for-the-badge&logo=owasp&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Python-3.8+-FFD700?style=for-the-badge&logo=python&logoColor=black"/>
-  <img src="https://img.shields.io/badge/Reports-HTML_PDF-FF4444?style=for-the-badge"/>
-</p>
+A lightweight web application vulnerability scanner. Point it at a URL, get a prioritised list of security issues with CVE references and remediation steps.
 
 ---
 
-> **"The best defense is knowing how to attack."**  
-> A web application vulnerability scanner built in pure Python — crawls, fuzzes, and reports like OWASP ZAP.
+## Scan coverage
+
+**Injection**
+- SQL injection (error-based, blind, time-based) — `T1190`, `CWE-89`
+- XSS (reflected, stored, DOM) — `CWE-79`
+- Command injection via form fields and headers — `CWE-78`
+- Path traversal / LFI — `CWE-22`
+- XXE in XML endpoints — `CWE-611`
+
+**Authentication & Session**
+- Default credentials against login pages
+- Weak session token entropy detection
+- Missing HttpOnly / Secure cookie flags
+- Exposed admin panels (`/admin`, `/wp-admin`, `/.env`, etc.)
+
+**Configuration**
+- Open HTTP methods (TRACE, PUT, DELETE)
+- Missing security headers (CSP, HSTS, X-Frame-Options)
+- TLS version and cipher audit
+- Directory listing enabled
+- Exposed `.git`, `.svn`, backup files
+
+**CVE Matching**
+- Banner fingerprinting against NVD CVE database
+- Version-based vulnerability lookup (Apache, nginx, PHP, WordPress, etc.)
 
 ---
 
-### 💀 What It Hunts
-
-```
-TARGET ACQUIRED: https://target.com
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-[A01] Broken Access Control ............ SCANNING
-[A02] Cryptographic Failures ........... SCANNING  
-[A03] Injection (SQLi + XSS) ........... ████████ FOUND 🔴
-[A05] Security Misconfiguration ........ ████████ FOUND 🟡
-[A07] Auth & Session Failures .......... SCANNING
-[A09] Logging & Monitoring Failures .... SCANNING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-CRITICAL: 2  HIGH: 4  MEDIUM: 6  LOW: 1
-```
-
----
-
-### 🔧 Install & Run
+## Usage
 
 ```bash
 git clone https://github.com/SRINIVASAN55/SecureVulnScanner
-cd SecureVulnScanner && pip install -r requirements.txt
+cd SecureVulnScanner
+pip install -r requirements.txt
 
 # Basic scan
-python scanner.py -u https://testphp.vulnweb.com
+python scanner.py --url https://target.example.com
 
-# Deep scan — crawl 3 levels, 15s timeout
-python scanner.py -u https://target.com -d 3 -t 15
+# Full scan with all modules
+python scanner.py --url https://target.example.com --full
+
+# Scan with custom wordlist
+python scanner.py --url https://target.example.com --wordlist custom.txt
+
+# Output formats
+python scanner.py --url https://target.example.com --output report.html
+python scanner.py --url https://target.example.com --output report.json
 ```
 
 ---
 
-### 🧪 Vulnerability Checks
-
-| Check | Method | OWASP |
-|---|---|---|
-| SQL Injection | Error-based form fuzzing with 6 payloads | A03 |
-| Reflected XSS | Payload injection into all inputs | A03 |
-| Missing Security Headers | CSP, HSTS, X-Frame-Options, 6 more | A05 |
-| Sensitive File Exposure | `.env`, `.git`, `wp-config`, `dump.sql` | A05 |
-| Directory Listing | Common paths: `/admin/`, `/backup/` | A05 |
-| Open Redirect | Parameter fuzzing on redirect params | A01 |
-| Unencrypted Transport | HTTP vs HTTPS detection | A02 |
-| Info Disclosure | `Server`, `X-Powered-By` headers | A05 |
-
----
-
-### 📄 HTML Report Output
+## Sample report
 
 ```
-┌────────────────────────────────────────────────────┐
-│  🔴 CRITICAL  SQL Injection — /search.php           │
-│  OWASP: A03:2021   Payload: ' OR 1=1--             │
-│  Fix: Use parameterized queries                     │
-├────────────────────────────────────────────────────┤
-│  🟡 MEDIUM    Missing Header: X-Frame-Options       │
-│  OWASP: A05:2021                                   │
-│  Fix: Add X-Frame-Options: DENY                    │
-└────────────────────────────────────────────────────┘
+SCAN RESULTS — target.example.com
+──────────────────────────────────────────────────────────
+[CRITICAL]  SQL Injection in /search?q=  (CWE-89)
+            Payload: ' OR 1=1--
+            Fix: Use parameterised queries
+
+[HIGH]      Stored XSS in /comments     (CWE-79)
+            Payload: <script>alert(1)</script>
+            Fix: Encode output, implement CSP
+
+[HIGH]      Apache 2.4.49 detected      (CVE-2021-41773)
+            Path traversal + RCE if mod_cgi enabled
+            Fix: Upgrade to 2.4.51+
+
+[MEDIUM]    Missing HSTS header
+            Fix: Strict-Transport-Security: max-age=31536000
+
+[LOW]       Directory listing on /uploads/
+            Fix: Disable in server config
+──────────────────────────────────────────────────────────
+5 findings  |  1 critical  |  2 high  |  1 medium  |  1 low
 ```
 
 ---
 
-> ⚠️ **Legal:** Only scan systems you own or have written permission to test. Unauthorized scanning is illegal.
+## Legal
 
-<p align="center">Built by <a href="https://github.com/SRINIVASAN55">SRINIVASAN55</a> · <a href="https://linkedin.com/in/srinivasan132">LinkedIn</a></p>
+Only scan systems you own or have written permission to test. Unauthorized scanning is illegal in most jurisdictions.
+
+---
+
+**Author:** S. Srinivasan · [GitHub](https://github.com/SRINIVASAN55) · [LinkedIn](https://linkedin.com/in/srinivasan132)
